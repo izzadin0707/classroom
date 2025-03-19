@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('classrooms', function (Blueprint $table) {
+        Schema::create('materials', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()->references('id')->on('users')->onDelete('set null');
-            $table->string('classname')->nullable();
+            $table->foreignId('class_id')->nullable()->references('id')->on('classrooms')->onDelete('set null');
+            $table->string('title')->nullable();
             $table->text('description')->nullable();
-            $table->string('classcode')->nullable();
+            $table->string('file_path')->nullable();
+            $table->timestamp('uploaded_at')->nullable();
             $table->timestamps();
         });
     }
@@ -26,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('classrooms');
+        Schema::dropIfExists('materials');
     }
 };

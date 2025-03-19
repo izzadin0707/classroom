@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('members', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('class_id')->nullable()->index();
-            $table->foreignId('user_id')->nullable()->index();
+            $table->foreignId('class_id')->nullable()->references('id')->on('classrooms')->onDelete('set null');
+            $table->foreignId('user_id')->nullable()->references('id')->on('users')->onDelete('set null');
             $table->timestamp('joined_at')->nullable();
             $table->timestamps();
         });

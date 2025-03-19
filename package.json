@@ -21,6 +21,7 @@
         "vite": "^6.0.11"
     },
     "dependencies": {
+        "@inertiajs/inertia": "^0.11.1",
         "boxicons": "^2.1.4"
     }
 }

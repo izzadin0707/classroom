@@ -1,39 +1,239 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Dropdown from '@/Components/Dropdown';
 import Class from '@/Components/Class';
-import { Head, Link } from '@inertiajs/react';
-import boxicons from 'boxicons';
+import { Head, Link, useForm } from '@inertiajs/react';
+import Modal from '@/Components/Modal';
+import InputError from '@/Components/InputError';
+import InputLabel from '@/Components/InputLabel';
+import TextInput from '@/Components/TextInput';
+import PrimaryButton from '@/Components/PrimaryButton';
+import DangerButton from '@/Components/DangerButton';
+import { useRef, useState } from 'react';
 
-export default function Dashboard() {
+export default function Dashboard({ auth, ownedClassrooms = [], joinedClassrooms = [] }) {
+    const [confirmingClassForm, setConfirmingClassForm] = useState(false);
+    const [confirmingJoinForm, setConfirmingJoinForm] = useState(false);
+    const classNameInput = useRef();
+
+    const {
+        data,
+        setData,
+        post,
+        processing,
+        reset,
+        errors,
+        clearErrors,
+    } = useForm({
+        classname: '',
+        description: '',
+    });
+
+    const joinForm = useForm({
+        classcode: '',
+    });
+
+    const confirmClassForm = () => {
+        setConfirmingClassForm(true);
+    };
+
+    const confirmJoinForm = () => {
+        setConfirmingJoinForm(true);
+    };
+
+    const submitClass = (e) => {
+        e.preventDefault();
+
+        post(route('classrooms.store'), {
+            preserveScroll: true,
+            onSuccess: () => closeModal(),
+            onError: () => classNameInput.current.focus(),
+            onFinish: () => reset(),
+        });
+    };
+
+    const submitJoin = (e) => {
+        e.preventDefault();
+
+        joinForm.post(route('classrooms.join'), {
+            preserveScroll: true,
+            onSuccess: () => closeJoinModal(),
+            onFinish: () => joinForm.reset(),
+        });
+    };
+
+    const closeModal = () => {
+        setConfirmingClassForm(false);
+        clearErrors();
+        reset();
+    };
+
+    const closeJoinModal = () => {
+        setConfirmingJoinForm(false);
+        joinForm.clearErrors();
+        joinForm.reset();
+    };
+
     return (
         <AuthenticatedLayout
-            header="Dashboard"
+            user={auth.user}
+            header="Welcome to Classroom"
         >
-            <Head title="Dashboard" />
+            <Head title="Home" />
 
             <div className="py-12">
-                {/* <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            You're logged in!
+                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                    <div className="flex justify-between mb-6">
+                        <h2 className="text-2xl font-semibold text-gray-900">Your Classes</h2>
+
+                        <div className="flex space-x-4">
+                            <button
+                                onClick={confirmJoinForm}
+                                className="inline-flex items-center px-4 py-2 border rounded-md font-semibold text-xs uppercase tracking-widest shadow-sm focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 text-blue-600 ring-1 ring-blue-200 transition hover:bg-blue-100 focus:outline-none focus-visible:ring-blue-500"
+                            >
+                                Join Class
+                            </button>
+                            <PrimaryButton
+                                onClick={confirmClassForm}
+                            >
+                                Create Class
+                            </PrimaryButton>
                         </div>
                     </div>
-                </div> */}
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8 flex flex-wrap gap-5">
-                    <Class />
-                    <Class title='Noteworthy technology acquisitions 2021' desciption='Here are the biggest enterprise technology acquisitions of 2021 so far, in reverse chronological order.' />
-                    {/* <Link to="/"> */}
-                    <Link href={route('classroom')} class="max-w-sm relative w-[100%] border-[3.5px] border-dashed border-gray-400 text-gray-400 rounded-lg shadow-sm cursor-pointer text-[3rem] transition-all hover:bg-blue-50 hover:border-blue-300 hover:text-blue-300">
-                        {/* <a href="#">
-                            <img class="rounded-t-lg aspect-video object-cover" src="https://images.unsplash.com/photo-1544716278-e513176f20b5?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="" />
-                        </a> */}
-                        <div class="absolute translate-x-[-50%] translate-y-[-50%] left-[50%] top-[50%]">
-                            +
+
+                    {ownedClassrooms.length > 0 && (
+                        <div className="mb-8">
+                            <h3 className="text-lg font-medium text-gray-900 mb-4">Classes You Teach</h3>
+                            <div className="flex flex-wrap gap-5">
+                                {ownedClassrooms.map((classroom) => (
+                                    <Class
+                                        title={classroom.classname}
+                                        description={classroom.description}
+                                        isOwner={true}
+                                        classroomId={classroom.id}
+                                    />
+                                ))}
+                            </div>
                         </div>
-                    </Link>
-                    {/* </Link> */}
+                    )}
+
+                    {joinedClassrooms.length > 0 && (
+                        <div className="mb-8">
+                            <h3 className="text-lg font-medium text-gray-900 mb-4">Classes You're Enrolled In</h3>
+                            <div className="flex flex-wrap gap-5">
+                                {joinedClassrooms.map((classroom) => (
+                                    <Class
+                                        title={classroom.classname}
+                                        description={classroom.description}
+                                        isOwner={false}
+                                        classroomId={classroom.id}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {ownedClassrooms.length === 0 && joinedClassrooms.length === 0 && (
+                        <div className="text-center py-12">
+                            <p className="text-lg text-gray-600">You haven't created or joined any classes yet.</p>
+                            <div className="mt-6 flex justify-center gap-3">
+                                <PrimaryButton
+                                    onClick={confirmClassForm}
+                                >
+                                    Create Your First Class
+                                </PrimaryButton>
+                                <button
+                                    onClick={confirmJoinForm}
+                                    className="inline-flex items-center px-4 py-2 border rounded-md font-semibold text-xs uppercase tracking-widest shadow-sm focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 text-blue-600 ring-1 ring-blue-200 transition hover:bg-blue-100 focus:outline-none focus-visible:ring-blue-500"
+                                >
+                                    Join a Class
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/* Create Class Modal */}
+            <Modal show={confirmingClassForm} onClose={closeModal}>
+                <form onSubmit={submitClass} className="p-6">
+                    <h2 className="text-lg font-medium text-gray-900">Create a New Class</h2>
+                    <p className="mt-1 text-sm text-gray-600">
+                        Enter the details for your new classroom.
+                    </p>
+
+                    <div className="mt-6">
+                        <InputLabel htmlFor="classname" value="Class Name" />
+                        <TextInput
+                            id="classname"
+                            ref={classNameInput}
+                            className="mt-1 block w-full"
+                            value={data.classname}
+                            onChange={(e) => setData('classname', e.target.value)}
+                            required
+                            isFocused
+                            autoComplete="classname"
+                            placeholder="Enter class name"
+                        />
+                        <InputError className="mt-2" message={errors.classname} />
+                    </div>
+
+                    <div className="mt-6">
+                        <InputLabel htmlFor="description" value="Description" />
+                        <textarea
+                            id="description"
+                            className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                            value={data.description}
+                            onChange={(e) => setData('description', e.target.value)}
+                            rows="4"
+                            placeholder="Enter class description"
+                        ></textarea>
+                        <InputError className="mt-2" message={errors.description} />
+                    </div>
+
+                    <div className="mt-6 flex justify-end">
+                        <DangerButton className="mr-3" onClick={closeModal}>
+                            Cancel
+                        </DangerButton>
+                        <PrimaryButton disabled={processing}>
+                            Create Class
+                        </PrimaryButton>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Join Class Modal */}
+            <Modal show={confirmingJoinForm} onClose={closeJoinModal}>
+                <form onSubmit={submitJoin} className="p-6">
+                    <h2 className="text-lg font-medium text-gray-900">Join a Class</h2>
+                    <p className="mt-1 text-sm text-gray-600">
+                        Enter the class code provided by your teacher.
+                    </p>
+
+                    <div className="mt-6">
+                        <InputLabel htmlFor="classcode" value="Class Code" />
+                        <TextInput
+                            id="classcode"
+                            className="mt-1 block w-full"
+                            value={joinForm.data.classcode}
+                            onChange={(e) => joinForm.setData('classcode', e.target.value)}
+                            required
+                            isFocused
+                            autoComplete="off"
+                            placeholder="Enter class code"
+                        />
+                        <InputError className="mt-2" message={joinForm.errors.classcode} />
+                    </div>
+
+                    <div className="mt-6 flex justify-end">
+                        <DangerButton className="mr-3" onClick={closeJoinModal}>
+                            Cancel
+                        </DangerButton>
+                        <PrimaryButton disabled={joinForm.processing}>
+                            Join Class
+                        </PrimaryButton>
+                    </div>
+                </form>
+            </Modal>
         </AuthenticatedLayout>
     );
 }

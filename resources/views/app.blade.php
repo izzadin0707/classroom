@@ -16,6 +16,12 @@
         @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
         @inertiaHead
     </head>
+    <style>
+        ::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+        }
+    </style>
     <body class="font-sans antialiased">
         @inertia
     </body>

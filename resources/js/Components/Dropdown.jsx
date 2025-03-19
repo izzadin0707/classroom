@@ -51,13 +51,7 @@ const Content = ({
         alignmentClasses = 'ltr:origin-top-right rtl:origin-top-left end-0';
     }
 
-    let widthClasses = '';
-
-    if (width === '48') {
-        widthClasses = 'w-48';
-    } else {
-        widthClasses = width;
-    }
+    let widthClasses = width === '48' ? 'w-48' : width;
 
     return (
         <>
@@ -102,8 +96,24 @@ const DropdownLink = ({ className = '', children, ...props }) => {
     );
 };
 
+const Button = ({ className = '', children, onClick, ...props }) => {
+    return (
+        <button
+            {...props}
+            onClick={onClick}
+            className={
+                'block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 transition duration-150 ease-in-out hover:bg-gray-100 focus:bg-gray-100 focus:outline-none ' +
+                className
+            }
+        >
+            {children}
+        </button>
+    );
+};
+
 Dropdown.Trigger = Trigger;
 Dropdown.Content = Content;
 Dropdown.Link = DropdownLink;
+Dropdown.Button = Button;
 
 export default Dropdown;
