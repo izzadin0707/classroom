@@ -4,10 +4,11 @@ import { useForm } from '@inertiajs/react';
 export default function AssignmentForm({ classroomId, onSuccess, onError, onCancel, assignment = null }) {
     const { data, setData, post, put, processing, errors, reset } = useForm({
         title: assignment?.title || '',
-        description: assignment?.description || '',
+        description: assignment?.description || assignment?.content || '',
         due_date: assignment?.due_date ? new Date(assignment.due_date).toISOString().split('T')[0] : '',
         file: null,
         class_id: classroomId,
+        _method: assignment ? 'put' : 'post', // Tambahkan _method untuk memastikan method yang benar
     });
 
     const isEditing = !!assignment;
@@ -16,7 +17,9 @@ export default function AssignmentForm({ classroomId, onSuccess, onError, onCanc
         e.preventDefault();
         
         if (isEditing) {
-            put(`/assignments/${assignment.id}`, {
+            // Menggunakan method post dengan _method: 'put' untuk mendukung upload file
+            post(`/assignments/${assignment.id}`, {
+                forceFormData: true, // Memaksa penggunaan FormData untuk upload file
                 onSuccess: () => {
                     reset();
                     if (onSuccess) onSuccess();
@@ -27,6 +30,7 @@ export default function AssignmentForm({ classroomId, onSuccess, onError, onCanc
             });
         } else {
             post('/assignments', {
+                forceFormData: true, // Memaksa penggunaan FormData untuk upload file
                 onSuccess: () => {
                     reset();
                     if (onSuccess) onSuccess();
@@ -37,6 +41,8 @@ export default function AssignmentForm({ classroomId, onSuccess, onError, onCanc
             });
         }
     };
+
+    console.log('test')
 
     return (
         <>

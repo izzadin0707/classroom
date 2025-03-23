@@ -15,6 +15,7 @@ class Submission extends Model
         'file_path',
         'score',
         'feedback',
+        'status',
         'submitted_at'
     ];
 
@@ -30,5 +31,13 @@ class Submission extends Model
     public function users()
     {
         return $this->belongsTo(User::class, 'student_id');
+    }
+
+    /**
+     * Get the comments for this submission
+     */
+    public function comments()
+    {
+        return $this->hasMany(SubmissionComment::class);
     }
 }

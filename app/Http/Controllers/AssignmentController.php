@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Assignment;
 use App\Models\Classroom;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Redirect;
@@ -26,7 +27,7 @@ class AssignmentController extends Controller
 
         // Verifikasi bahwa pengguna adalah pemilik kelas
         $classroom = Classroom::findOrFail($request->class_id);
-        if ($classroom->user_id !== auth()->id()) {
+        if ($classroom->user_id !== Auth::id()) {
             return back()->with('error', 'You are not authorized to add assignments to this class.');
         }
 
@@ -61,7 +62,7 @@ class AssignmentController extends Controller
 
         // Verifikasi bahwa pengguna adalah pemilik kelas
         $classroom = Classroom::findOrFail($assignment->class_id);
-        if ($classroom->user_id !== auth()->id()) {
+        if ($classroom->user_id !== Auth::id()) {
             return back()->with('error', 'You are not authorized to update this assignment.');
         }
 
@@ -92,7 +93,7 @@ class AssignmentController extends Controller
     {
         // Verifikasi bahwa pengguna adalah pemilik kelas
         $classroom = Classroom::findOrFail($assignment->class_id);
-        if ($classroom->user_id !== auth()->id()) {
+        if ($classroom->user_id !== Auth::id()) {
             return back()->with('error', 'You are not authorized to delete this assignment.');
         }
 

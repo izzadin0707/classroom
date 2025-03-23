@@ -10,6 +10,7 @@ use App\Models\Submission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -84,11 +85,8 @@ class ClassroomController extends Controller
         //     ->get();
 
         // Load assignments
-        $assignments = $classroom->assignments()->orderBy('due_date', 'desc')->get();
-        
-        // Load materials
-        $materials = $classroom->materials()->orderBy('created_at', 'desc')->get();
-        
+        $assignments = $classroom->assignments()->orderBy('created_at', 'desc')->get();
+
         // Load submissions (if owner)
         $submissions = [];
         if ($classroom->user_id === Auth::id()) {
@@ -99,14 +97,38 @@ class ClassroomController extends Controller
             // Only load this student's submissions
             $submissions = Submission::whereIn('assignment_id', $assignments->pluck('id'))
                 ->where('student_id', Auth::id())
+                ->with('users')
                 ->get();
         }
 
+        // Load Stream
+        $announcements = $classroom->announcements()
+        ->select('id', 'title', 'content', 'file_path', 'created_at', DB::raw('NULL as due_date'), DB::raw("'announcement' as type"))
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+        $assignments = $classroom->assignments()
+        ->select('id', 'title', DB::raw('description as content'), 'file_path', 'created_at', 'due_date', DB::raw("'assignment' as type"))
+        ->orderBy('due_date', 'desc')
+        ->get();
+
+        $materials = $classroom->materials()
+        ->select('id', 'title', DB::raw('description as content'), 'file_path', 'created_at', DB::raw('NULL as due_date'), DB::raw("'material' as type"))
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+        $streams = $announcements->concat($assignments)->concat($materials);
+
+        $streams = $streams->sortByDesc('created_at')->values();
+
         return Inertia::render('Classroom/Show', [
             'classroom' => $classroom,
-            'materials' => $materials,
-            'assignments' => $assignments,
+            'streams' => $streams,
+            'announcements' => $classroom->announcements()->orderBy('created_at', 'desc')->get(),
+            'materials' => $classroom->materials()->orderBy('created_at', 'desc')->get(),
+            'assignments' => $classroom->assignments()->orderBy('created_at', 'desc')->get(),
             'submissions' => $submissions,
+            'members' => $classroom->members()->with('user')->get(),
         ]);
     }
 

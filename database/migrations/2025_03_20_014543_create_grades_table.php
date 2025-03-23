@@ -11,15 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('submissions', function (Blueprint $table) {
+        Schema::create('grades', function (Blueprint $table) {
             $table->id();
             $table->foreignId('assignment_id')->nullable()->references('id')->on('assignments')->onDelete('set null');
-            $table->foreignId('student_id')->nullable()->references('id')->on('users')->onDelete('set null');
-            $table->string('file_path')->nullable();
+            $table->foreignId('user_id')->nullable()->references('id')->on('users')->onDelete('set null');
             $table->float('score')->nullable();
-            $table->text('feedback')->nullable();
-            $table->enum('status', ['pending', 'accepted', 'revision'])->default('pending');
-            $table->timestamp('submitted_at')->nullable();
+            $table->text('comment')->nullable();
             $table->timestamps();
         });
     }
@@ -29,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('submissions');
+        Schema::dropIfExists('grades');
     }
 };

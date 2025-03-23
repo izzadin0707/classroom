@@ -22,6 +22,7 @@
     },
     "dependencies": {
         "@inertiajs/inertia": "^0.11.1",
-        "boxicons": "^2.1.4"
+        "boxicons": "^2.1.4",
+        "react-select": "^5.10.1"
     }
 }

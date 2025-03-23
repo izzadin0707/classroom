@@ -18,8 +18,17 @@
     </head>
     <style>
         ::-webkit-scrollbar {
-            width: 0;
-            height: 0;
+            width: 3px;
+            height: 3px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
         }
     </style>
     <body class="font-sans antialiased">

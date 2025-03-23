@@ -43,6 +43,14 @@ class Classroom extends Model
     }
 
     /**
+     * Get the announcements for the classroom.
+     */
+    public function announcements()
+    {
+        return $this->hasMany(Announcement::class, 'class_id');
+    }
+
+    /**
      * Get the members for the classroom.
      */
     public function members(): HasMany

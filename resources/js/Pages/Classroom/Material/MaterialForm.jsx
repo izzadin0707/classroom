@@ -4,7 +4,7 @@ import { useForm } from '@inertiajs/react';
 export default function MaterialForm({ classroomId, material = null, onSuccess, onError, onCancel }) {
     const { data, setData, post, put, processing, errors, reset } = useForm({
         title: material ? material.title : '',
-        description: material ? material.description : '',
+        description: material?.description || material?.content || '',
         file: null,
         class_id: classroomId,
         _method: material ? 'put' : 'post'
@@ -14,7 +14,7 @@ export default function MaterialForm({ classroomId, material = null, onSuccess, 
         if (material) {
             setData({
                 title: material.title,
-                description: material.description,
+                description: material?.description || material?.content,
                 file: null,
                 class_id: classroomId,
                 _method: 'put'

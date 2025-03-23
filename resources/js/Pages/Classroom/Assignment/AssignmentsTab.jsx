@@ -3,14 +3,17 @@ import Dropdown from '@/Components/Dropdown';
 import Modal from '@/Components/Modal';
 import AssignmentForm from './AssignmentForm';
 import ConfirmModal from '@/Components/ConfirmModal';
-import SubmissionUpload from './SubmissionUpload';
-import SubmissionForm from './SubmissionForm';
+import SubmissionUpload from '../Submission/SubmissionUpload';
+import SubmissionList from '../Submission/SubmissionList';
+import SubmissionView from '../Submission/SubmissionView';
 import { router } from '@inertiajs/react';
 import Alert from '@/Components/Alert';
 import boxicons from 'boxicons';
 
 export default function AssignmentsTab({ classroom, assignments, submissions, auth, isOwner }) {
     const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+    const [showViewerModal, setShowViewerModal] = useState(false);
+    const [selectedSubmission, setSelectedSubmission] = useState(null);
     const [editingAssignment, setEditingAssignment] = useState(null);
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [assignmentToDelete, setAssignmentToDelete] = useState(null);
@@ -80,13 +83,11 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
         setShowUploadModal(true);
     };
     
-    // Pada bagian handleSubmissionSuccess perlu ditambahkan
     const handleSubmissionSuccess = (message) => {
         setShowUploadModal(false);
         showAlert('success', message);
     };
 
-    // Pada bagian handleSubmissionError perlu ditambahkan
     const handleSubmissionError = (message) => {
         showAlert('error', message);
     };
@@ -137,20 +138,30 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
     const getUserSubmission = (assignmentId) => {
         return submissions.find(sub => 
             sub.assignment_id === assignmentId && 
-            sub.student_id === classroom.user_id
+            sub.student_id === auth.id
         );
+    };
+
+    const openSubmissionViewer = (submission) => {
+        setSelectedSubmission(submission);
+        setShowViewerModal(true);
+    };
+
+    const closeSubmissionViewer = () => {
+        setShowViewerModal(false);
+        setSelectedSubmission(null);
     };
 
     return (
         <>
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
                 {/* Header with action button */}
-                <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-semibold text-gray-800">Assignments</h3>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <h3 className="text-xl font-semibold text-gray-800 my-1 hidden sm:block">Assignments</h3>
                     {isOwner && (
                         <button
                         onClick={() => setShowAssignmentModal(true)}
-                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 w-full sm:w-auto justify-center"
                         >
                             <svg className="w-5 h-5 mr-2 -ml-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -168,21 +179,44 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
                         <p className="text-gray-500">No assignments yet</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {assignments.map((assignment) => {
                             const submitted = hasSubmitted(assignment.id);
                             const userSubmission = getUserSubmission(assignment.id);
                             
                             return (
                                 <div key={assignment.id} className="overflow-hidden transition-shadow duration-300 bg-white border rounded-lg shadow-sm hover:shadow-md">
-                                    <div className="p-5 relative">
-                                        <div className="flex items-center justify-between mb-3">
+                                    <div className="p-4 sm:p-5 relative">
+                                        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                                             <h4 className="text-lg font-semibold text-gray-900 truncate">{assignment.title}</h4>
-                                            <span className="px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full">
-                                                Due: {new Date(assignment.due_date).toLocaleDateString()}
-                                            </span>
+                                            <div className='text-end'>
+                                                <span 
+                                                    className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                                                        new Date(assignment.due_date) < new Date()
+                                                        ? 'text-red-800 bg-red-100'
+                                                        : 'text-blue-800 bg-blue-100'
+                                                    }`}>
+                                                    {new Date(assignment.due_date) < new Date() && (
+                                                        <svg
+                                                            className="w-4 h-4 mr-1"
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            stroke="currentColor"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={2}
+                                                                d="M12 9v2m0 4h.01M12 5a7 7 0 100 14 7 7 0 000-14z"
+                                                            />
+                                                        </svg>
+                                                    )}
+                                                    Due: {new Date(assignment.due_date).toLocaleDateString()}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <p className="mb-4 text-sm text-gray-600 line-clamp-3">{assignment.description}</p>
+                                        <p className="mb-10 text-sm text-gray-600 line-clamp-1">{assignment.description}</p>
 
                                         {assignment.file_path && (
                                             <a 
@@ -200,9 +234,9 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
                                         
                                         <hr className='my-3' />
 
-                                        <div className="flex justify-between items-center">
+                                        <div className="flex flex-wrap justify-between items-center gap-2">
                                             {!isOwner && (
-                                                <div className="flex space-x-2">
+                                                <div className="flex flex-wrap gap-2">
                                                     {submitted ? (
                                                         <>
                                                             <button
@@ -215,19 +249,16 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
                                                                 Uploaded
                                                             </button>
                                                             <button
-                                                                onClick={() => handleCancelSubmission(assignment)}
-                                                                className="inline-flex items-center px-3 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200"
+                                                                onClick={() => openSubmissionViewer(userSubmission)}
+                                                                className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200"
                                                             >
-                                                                <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                                </svg>
-                                                                Cancel
+                                                                View Submission
                                                             </button>
                                                         </>
                                                     ) : (
                                                         <button
                                                             onClick={() => openUploadModal(assignment)}
-                                                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200"
+                                                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-yellow-700 bg-yellow-100 rounded-md hover:bg-yellow-200"
                                                         >
                                                             <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-6l-4-4m0 0l-4 4m4-4v10" />
@@ -241,7 +272,7 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
                                             {isOwner && (
                                                 <button
                                                     onClick={() => openViewSubmissionsModal(assignment)}
-                                                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200"
+                                                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-yellow-700 bg-yellow-100 rounded-md hover:bg-yellow-200"
                                                 >
                                                     Submissions ({submissions.filter(sub => sub.assignment_id === assignment.id).length})
                                                 </button>
@@ -280,7 +311,6 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
             <Modal
                 show={showAssignmentModal}
                 onClose={closeAssignmentModal}
-                maxWidth="md"
             >
                 <div className="p-6">
                     <h2 className="text-lg font-medium text-gray-900">
@@ -308,10 +338,23 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
             />
 
             {/* Submission Form Modal */}
-            <SubmissionForm
+            <SubmissionList
                 show={showViewSubmissionsModal}
                 onClose={() => setShowViewSubmissionsModal(false)}
                 assignmentId={selectedAssignment?.id}
+                due_date={selectedAssignment?.due_date}
+                isOwner={isOwner}
+                auth={auth}
+            />
+
+            {/* Submission Viewer Modal */}
+            <SubmissionView
+                show={showViewerModal}
+                onClose={closeSubmissionViewer}
+                submission={selectedSubmission}
+                isOwner={isOwner}
+                onStatusChange={(newStatus) => handleSubmissionStatusChange(selectedSubmission.id, newStatus)}
+                auth={auth}
             />
 
             {/* Confirm Delete Modal */}

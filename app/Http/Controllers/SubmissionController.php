@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Submission;
 use App\Models\Assignment;
+use App\Models\SubmissionComment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -32,6 +33,23 @@ class SubmissionController extends Controller
         return redirect()->back();
     }
 
+    public function update(Request $request, $id)
+    {
+        $submission = Submission::findOrFail($id);
+        $submission->status = $request->status;
+        $submission->save();
+
+        // Add system message to the submission comments
+        SubmissionComment::create([
+            'submission_id' => $id,
+            'user_id' => null, // System message
+            'message' => "Submission marked as {$request->status}",
+            'is_system' => true,
+        ]);
+
+        return response()->json($submission);
+    }
+
     public function list($assignmentId)
     {
         $submissions = Submission::where('assignment_id', $assignmentId)
@@ -56,5 +74,29 @@ class SubmissionController extends Controller
         $submission->delete();
         
         return redirect()->back();
+    }
+
+    public function getMessages($id)
+    {
+        $messages = SubmissionComment::where('submission_id', $id)
+                    ->with('user')
+                    ->orderBy('created_at', 'asc')
+                    ->get();
+
+        return response()->json($messages);
+    }
+
+    public function storeMessage(Request $request, $id)
+    {
+        $message = SubmissionComment::create([
+            'submission_id' => $id,
+            'user_id' => Auth::id(),
+            'message' => $request->message,
+            'is_system' => false,
+        ]);
+
+        $message->load('user');
+
+        return response()->json($message);
     }
 }
