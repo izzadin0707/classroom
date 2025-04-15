@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Dropdown from '@/Components/Dropdown';
 import Modal from '@/Components/Modal';
 import AssignmentForm from './AssignmentForm';
@@ -23,9 +23,23 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
         message: ''
     });
     
-    // State untuk konfirmasi pembatalan submission
     const [confirmCancelSubmission, setConfirmCancelSubmission] = useState(false);
     const [submissionToCancel, setSubmissionToCancel] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filteredAssignments, setFilteredAssignments] = useState(assignments);
+
+    useEffect(() => {
+        if (searchQuery.trim() === '') {
+            setFilteredAssignments(assignments);
+        } else {
+            const query = searchQuery.toLowerCase();
+            const filtered = assignments.filter(assignment => 
+                assignment.title.toLowerCase().includes(query) || 
+                assignment.description?.toLowerCase().includes(query)
+            );
+            setFilteredAssignments(filtered);
+        }
+    }, [searchQuery, assignments]);
 
     const showAlert = (type, message) => {
         setAlertState({
@@ -97,7 +111,6 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
         setShowViewSubmissionsModal(true);
     };
     
-    // Fungsi untuk menangani pembatalan submission
     const handleCancelSubmission = (assignment) => {
         const submission = submissions.find(sub => 
             sub.assignment_id === assignment.id && 
@@ -110,7 +123,6 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
         }
     };
     
-    // Fungsi untuk melakukan proses pembatalan submission
     const confirmCancelSubmissionAction = () => {
         router.delete(`/submissions/${submissionToCancel.id}`, {
             onSuccess: () => {
@@ -126,7 +138,6 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
         });
     };
     
-    // Helper function untuk mengecek apakah user sudah submit
     const hasSubmitted = (assignmentId) => {
         return submissions.some(sub => 
             sub.assignment_id === assignmentId && 
@@ -134,7 +145,6 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
         );
     };
     
-    // Helper function untuk mendapatkan submission user
     const getUserSubmission = (assignmentId) => {
         return submissions.find(sub => 
             sub.assignment_id === assignmentId && 
@@ -155,7 +165,6 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
     return (
         <>
             <div className="space-y-4 sm:space-y-6">
-                {/* Header with action button */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <h3 className="text-xl font-semibold text-gray-800 my-1 hidden sm:block">Assignments</h3>
                     {isOwner && (
@@ -172,15 +181,33 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
                 </div>
 
                 <hr />
-                
-                {/* Assignments Grid */}
-                {assignments.length === 0 ? (
+
+                <div className="mb-4">
+                    <div className="relative rounded-md shadow-sm w-full sm:w-72">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                            placeholder="Search assignments..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                {filteredAssignments.length === 0 ? (
                     <div className="p-8 text-center bg-gray-50 rounded-lg">
-                        <p className="text-gray-500">No assignments yet</p>
+                        <p className="text-gray-500">
+                            {searchQuery.trim() ? `No assignments found matching "${searchQuery}"` : 'No assignments yet'}
+                        </p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {assignments.map((assignment) => {
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {filteredAssignments.map((assignment) => {
                             const submitted = hasSubmitted(assignment.id);
                             const userSubmission = getUserSubmission(assignment.id);
                             
@@ -305,9 +332,12 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
                         })}
                     </div>
                 )}
+
+                <div className="mt-4 text-xs sm:text-sm text-gray-500">
+                    {filteredAssignments.length} of {assignments.length} assignments displayed
+                </div>
             </div>
 
-            {/* Assignment Modal */}
             <Modal
                 show={showAssignmentModal}
                 onClose={closeAssignmentModal}
@@ -328,7 +358,6 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
                 </div>
             </Modal>
 
-            {/* Submission Upload Modal */}
             <SubmissionUpload
                 show={showUploadModal}
                 onClose={() => setShowUploadModal(false)}
@@ -337,7 +366,6 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
                 onError={handleSubmissionError}
             />
 
-            {/* Submission Form Modal */}
             <SubmissionList
                 show={showViewSubmissionsModal}
                 onClose={() => setShowViewSubmissionsModal(false)}
@@ -347,7 +375,6 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
                 auth={auth}
             />
 
-            {/* Submission Viewer Modal */}
             <SubmissionView
                 show={showViewerModal}
                 onClose={closeSubmissionViewer}
@@ -357,7 +384,6 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
                 auth={auth}
             />
 
-            {/* Confirm Delete Modal */}
             <ConfirmModal
                 isOpen={confirmDelete}
                 onClose={() => setConfirmDelete(false)}
@@ -366,7 +392,6 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
                 message="Are you sure you want to delete this assignment? This action cannot be undone."
             />
             
-            {/* Confirm Cancel Submission Modal */}
             <ConfirmModal
                 isOpen={confirmCancelSubmission}
                 onClose={() => setConfirmCancelSubmission(false)}
@@ -375,7 +400,6 @@ export default function AssignmentsTab({ classroom, assignments, submissions, au
                 message="Are you sure you want to cancel this submission? This action cannot be undone."
             />
 
-            {/* Alert */}
             <Alert
                 isOpen={alertState.isOpen}
                 onClose={() => setAlertState({ ...alertState, isOpen: false })}

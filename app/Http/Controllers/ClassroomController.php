@@ -75,33 +75,24 @@ class ClassroomController extends Controller
         
         $classroom->load('members.user');
 
-        // Tarik semua materi dan tugas berdasarkan class_id
-        // $materials = Material::where('class_id', $classroom->id)->get();
-        // $assignments = Assignment::where('class_id', $classroom->id)->get();
-
-        // Tarik semua submission untuk tugas di dalam kelas ini
-        // $submissions = Submission::with('user')
-        //     ->whereIn('assignment_id', $assignments->pluck('id'))
-        //     ->get();
-
         // Load assignments
         $assignments = $classroom->assignments()->orderBy('created_at', 'desc')->get();
 
         // Load submissions (if owner)
         $submissions = [];
         if ($classroom->user_id === Auth::id()) {
+            $memberIds = $classroom->members->pluck('user_id')->toArray();
             $submissions = Submission::whereIn('assignment_id', $assignments->pluck('id'))
+                ->whereIn('student_id', $memberIds)
                 ->with('users')
                 ->get();
         } else {
-            // Only load this student's submissions
             $submissions = Submission::whereIn('assignment_id', $assignments->pluck('id'))
                 ->where('student_id', Auth::id())
                 ->with('users')
                 ->get();
         }
 
-        // Load Stream
         $announcements = $classroom->announcements()
         ->select('id', 'title', 'content', 'file_path', 'created_at', DB::raw('NULL as due_date'), DB::raw("'announcement' as type"))
         ->orderBy('created_at', 'desc')

@@ -120,7 +120,7 @@ export default function Show({ auth, classroom, materials = [], assignments = []
                             
                             {/* Desktop Tabs */}
                             <nav className="hidden sm:flex overflow-x-auto">
-                                {['stream', 'assignments', 'materials', 'members', ...(isOwner ? ['grade'] : [])].map((tab) => (
+                                {['announcements', 'assignments', 'materials', 'members', ...(isOwner ? ['grade'] : [])].map((tab) => (
                                     <button
                                         key={tab}
                                         className={`whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm ${
@@ -138,7 +138,7 @@ export default function Show({ auth, classroom, materials = [], assignments = []
 
                         {/* Tab Content */}
                         <div className="p-6">
-                            {activeTab === 'stream' && (
+                            {activeTab === 'announcements' && (
                                 <StreamTab 
                                     classroom={classroom}
                                     announcements={announcements}
@@ -181,6 +181,8 @@ export default function Show({ auth, classroom, materials = [], assignments = []
                                     classroom={classroom}
                                     assignments={assignments}
                                     members={members}
+                                    isOwner={isOwner}
+                                    auth={auth.user}
                                 />
                             )}
                         </div>

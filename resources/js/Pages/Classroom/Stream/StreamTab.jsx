@@ -177,7 +177,7 @@ export default function StreamTab({ classroom, announcements = [], streams = [],
                 {streams.length > 0 && (
                     <>
                         <div className="flex items-center justify-between">
-                            <h3 className="text-xl font-semibold text-gray-800 my-1">Stream</h3>
+                            <h3 className="text-xl font-semibold text-gray-800 my-1">Announcements</h3>
                             {isOwner && (
                                 <button
                                     onClick={() => openModal('announcement')}

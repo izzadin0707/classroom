@@ -3,9 +3,12 @@ import axios from 'axios';
 import { router } from '@inertiajs/react';
 import Select from 'react-select';
 import Alert from '@/Components/Alert';
+import SubmissionView from '../Submission/SubmissionView';
 
-export default function GradeTab({ classroom, assignments = [], members = [] }) {
+export default function GradeTab({ classroom, assignments = [], members = [], isOwner = true, auth }) {
     const [selectedAssignment, setSelectedAssignment] = useState(null);
+    const [selectedSubmission, setSelectedSubmission] = useState(null);
+    const [submissions, setSubmissions] = useState([]);
     const [grades, setGrades] = useState({});
     const [comments, setComments] = useState({});
     const [isLoading, setIsLoading] = useState(false);
@@ -13,6 +16,7 @@ export default function GradeTab({ classroom, assignments = [], members = [] }) 
     const [alert, setAlert] = useState({ show: false, message: '', type: 'success' });
     const [searchQuery, setSearchQuery] = useState('');
     const [filteredMembers, setFilteredMembers] = useState(members);
+    const [showViewerModal, setShowViewerModal] = useState(false);
 
     // Format assignments for react-select
     const assignmentOptions = assignments.map(assignment => ({
@@ -44,6 +48,12 @@ export default function GradeTab({ classroom, assignments = [], members = [] }) 
     const loadGrades = async (assignmentId) => {
         setIsLoading(true);
         try {
+            // Load submissions first
+            const submissionsResponse = await axios.get(`/assignments/${assignmentId}/submissions`);
+            const submissionsData = submissionsResponse.data;
+            setSubmissions(submissionsData);
+    
+            // Then load grades
             const response = await axios.get(route('grades.index', { assignment_id: assignmentId }));
             
             const gradesData = {};
@@ -58,9 +68,13 @@ export default function GradeTab({ classroom, assignments = [], members = [] }) 
             setGrades(gradesData);
             setComments(commentsData);
             setSavedGrades(JSON.parse(JSON.stringify(gradesData)));
+    
+            // Debugging: Log submissions and their length
+            console.log('Loaded Submissions:', submissionsData);
+            console.log('Submissions Length:', submissionsData.length);
         } catch (error) {
-            console.error('Error loading grades:', error);
-            showAlert('Failed to load grades', 'error');
+            console.error('Error loading grades and submissions:', error);
+            showAlert('Failed to load grades and submissions', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -141,6 +155,40 @@ export default function GradeTab({ classroom, assignments = [], members = [] }) 
         setAlert(prev => ({ ...prev, show: false }));
     };
 
+    const handleSubmissionStatusChange = (submissionId, newStatus) => {
+        // Update the submissions list with the new status
+        const updatedSubmissions = submissions.map(sub => 
+            sub.id === submissionId ? {...sub, status: newStatus} : sub
+        );
+        setSubmissions(updatedSubmissions);
+    };
+
+    const openSubmissionViewer = (submission) => {
+        setSelectedSubmission(submission);
+        setShowViewerModal(true);
+    };
+
+    const closeSubmissionViewer = () => {
+        setShowViewerModal(false);
+        setSelectedSubmission(null);
+    };
+
+    const getStatusBadge = (status) => {
+        const statusConfig = {
+            pending: { className: 'bg-yellow-100 text-yellow-800', text: 'Pending' },
+            accepted: { className: 'bg-green-100 text-green-800', text: 'Accepted' },
+            revision: { className: 'bg-red-100 text-red-800', text: 'Needs Revision' }
+        };
+        
+        const config = statusConfig[status] || statusConfig.pending;
+        
+        return (
+            <span className={`px-2 py-1 text-xs font-medium rounded-full ${config.className}`}>
+                {config.text}
+            </span>
+        );
+    };
+
     return (
         <div className="space-y-4 sm:space-y-6">
             <div className="sm:flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hidden sm:block">
@@ -202,7 +250,11 @@ export default function GradeTab({ classroom, assignments = [], members = [] }) 
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {filteredMembers.length > 0 ? (
-                                        filteredMembers.map((member) => (
+                                        filteredMembers.map((member) => {
+                                            const userSubmission = submissions.find(sub => sub.student_id === member.user_id);
+                                            console.log(userSubmission)
+
+                                            return (
                                             <tr key={member.id}>
                                                 <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center">
@@ -259,9 +311,19 @@ export default function GradeTab({ classroom, assignments = [], members = [] }) 
                                                     >
                                                         Save
                                                     </button>
+                                                    <button
+                                                        type="button"
+                                                        className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-2 ms-2 text-xs sm:text-sm font-medium rounded-md shadow-sm ${
+                                                            userSubmission
+                                                                ? 'text-yellow-700 bg-yellow-100 hover:bg-yellow-200'
+                                                                : 'text-gray-500 bg-gray-300 cursor-not-allowed'
+                                                        }`}
+                                                        onClick={() => userSubmission && openSubmissionViewer(userSubmission)}>
+                                                        Submission
+                                                    </button>
                                                 </td>
                                             </tr>
-                                        ))
+                                        )})
                                     ) : (
                                         <tr>
                                             <td colSpan="4" className="px-4 sm:px-6 py-4 text-center text-sm text-gray-500">
@@ -311,6 +373,18 @@ export default function GradeTab({ classroom, assignments = [], members = [] }) 
                 message={alert.message}
                 duration={3000}
             />
+
+            {/* Submission Viewer Modal */}
+            {selectedSubmission && (
+                <SubmissionView
+                    show={showViewerModal}
+                    onClose={closeSubmissionViewer}
+                    submission={selectedSubmission}
+                    isOwner={isOwner}
+                    onStatusChange={(newStatus) => handleSubmissionStatusChange(selectedSubmission.id, newStatus)}
+                    auth={auth}
+                />
+            )}
         </div>
     );
 }

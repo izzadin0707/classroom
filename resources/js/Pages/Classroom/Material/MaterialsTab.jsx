@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '@/Components/Modal';
 import Alert from '@/Components/Alert';
 import MaterialForm from './MaterialForm';
@@ -9,6 +9,8 @@ export default function MaterialsTab({ classroom, materials, isOwner }) {
     const [showMaterialModal, setShowMaterialModal] = useState(false);
     const [editingMaterial, setEditingMaterial] = useState(null);
     const [deletingMaterial, setDeletingMaterial] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filteredMaterials, setFilteredMaterials] = useState(materials);
     const [alertState, setAlertState] = useState({
         isOpen: false,
         type: 'success',
@@ -56,6 +58,20 @@ export default function MaterialsTab({ classroom, materials, isOwner }) {
         showAlert('error', editingMaterial? 'Failed to update material. Please try again.' : 'Failed to create material. Please try again.');
     };
 
+    // Filter materials based on search query
+    useEffect(() => {
+        if (searchQuery.trim() === '') {
+            setFilteredMaterials(materials);
+        } else {
+            const query = searchQuery.toLowerCase();
+            const filtered = materials.filter(material => 
+                material.title.toLowerCase().includes(query) || 
+                material.description?.toLowerCase().includes(query)
+            );
+            setFilteredMaterials(filtered);
+        }
+    }, [searchQuery, materials]);
+
     return (
         <>
             <div className="space-y-4 sm:space-y-6">
@@ -77,14 +93,34 @@ export default function MaterialsTab({ classroom, materials, isOwner }) {
 
                 <hr />
 
+                {/* Search bar */}
+                <div className="mb-4">
+                    <div className="relative rounded-md shadow-sm w-full sm:w-72">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                            placeholder="Search materials..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                </div>
+
                 {/* Materials List */}
-                {materials.length === 0 ? (
+                {filteredMaterials.length === 0 ? (
                     <div className="p-8 text-center bg-gray-50 rounded-lg">
-                        <p className="text-gray-500">No learning materials available yet</p>
+                        <p className="text-gray-500">
+                            {searchQuery.trim() ? `No materials found matching "${searchQuery}"` : 'No learning materials available yet'}
+                        </p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {materials.map((material) => (
+                        {filteredMaterials.map((material) => (
                             <div key={material.id} className="overflow-hidden transition-shadow duration-300 bg-white border rounded-lg shadow-sm hover:shadow-md">
                                 <div className="p-4 sm:p-5">
                                     <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
@@ -137,6 +173,10 @@ export default function MaterialsTab({ classroom, materials, isOwner }) {
                         ))}
                     </div>
                 )}
+
+                <div className="mt-4 text-xs sm:text-sm text-gray-500">
+                    {filteredMaterials.length} of {materials.length} materials displayed
+                </div>
             </div>
 
             {/* Material Form Modal */}

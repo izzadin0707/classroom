@@ -39,10 +39,9 @@ class SubmissionController extends Controller
         $submission->status = $request->status;
         $submission->save();
 
-        // Add system message to the submission comments
         SubmissionComment::create([
             'submission_id' => $id,
-            'user_id' => null, // System message
+            'user_id' => null,
             'message' => "Submission marked as {$request->status}",
             'is_system' => true,
         ]);
@@ -52,7 +51,12 @@ class SubmissionController extends Controller
 
     public function list($assignmentId)
     {
+        $assignment = Assignment::with('classroom.members')->findOrFail($assignmentId);
+        
+        $memberIds = $assignment->classroom->members->pluck('user_id')->toArray();
+        
         $submissions = Submission::where('assignment_id', $assignmentId)
+            ->whereIn('student_id', $memberIds)
             ->with('users')
             ->get();
 
@@ -61,12 +65,10 @@ class SubmissionController extends Controller
     
     public function destroy(Submission $submission)
     {
-        // Pastikan hanya pemilik submission yang bisa menghapus
         if ($submission->student_id !== Auth::id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         
-        // Hapus file jika ada
         if ($submission->file_path) {
             Storage::disk('public')->delete($submission->file_path);
         }
